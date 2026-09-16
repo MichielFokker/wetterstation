@@ -1,4 +1,4 @@
-# Buienrader
+# Wetterstation
 
 Neerslagradar voor Nederland met actuele weersgegevens, buienverwachting en 14-daagse verwachting.
 

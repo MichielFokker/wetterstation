@@ -43,7 +43,7 @@ export default function App() {
       <header className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            ⛅ Buienrader <span className="ml-2 align-baseline rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-bold text-white">v3.2</span>
+            ⛅ Wetterstation <span className="ml-2 align-baseline rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-bold text-white">v3.2</span>
           </h1>
           <p className="text-sm text-gray-400">Actuele neerslagradar voor Nederland</p>
         </div>
