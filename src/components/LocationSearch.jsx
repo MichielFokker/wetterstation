@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const INITIAL_SUGGESTIONS = [
   { name: 'De Bilt', lat: 52.1, lon: 5.18 },
   { name: 'Amsterdam', lat: 52.37, lon: 4.9 },
@@ -5,13 +7,16 @@ const INITIAL_SUGGESTIONS = [
   { name: 'Utrecht', lat: 52.09, lon: 5.12 },
   { name: 'Groningen', lat: 53.22, lon: 6.56 },
   { name: 'Eindhoven', lat: 51.44, lon: 5.48 },
+  { name: 'Maastricht', lat: 50.85, lon: 5.69 },
   { name: 'Nijmegen', lat: 51.842, lon: 5.852 },
 ]
 
-export default function LocationSearch({ onSelect, onCurrentLocation }) {
+export default function LocationSearch({ name, onSelect, onCurrentLocation }) {
+  const [value, setValue] = useState(name || '')
+
   const handleSubmit = (e) => {
     e.preventDefault()
-    const query = e.target.elements.q.value.trim()
+    const query = value.trim()
     if (!query) return
 
     fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&countrycodes=nl&limit=5`)
@@ -20,6 +25,7 @@ export default function LocationSearch({ onSelect, onCurrentLocation }) {
         if (results.length > 0) {
           const first = results[0]
           onSelect(parseFloat(first.lat), parseFloat(first.lon), first.display_name)
+          setValue('')
         }
       })
       .catch(() => {})
@@ -31,6 +37,8 @@ export default function LocationSearch({ onSelect, onCurrentLocation }) {
         <input
           type="text"
           name="q"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
           placeholder="Zoek een plaats in Nederland…"
           className="flex-1 rounded-xl border border-gray-800 bg-gray-900/60 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 outline-none focus:border-sky-500"
         />
@@ -38,7 +46,7 @@ export default function LocationSearch({ onSelect, onCurrentLocation }) {
           type="submit"
           className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
         >
-          Zoek
+          💾 Opslaan
         </button>
         {onCurrentLocation && (
           <button

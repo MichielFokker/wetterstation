@@ -2,11 +2,15 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, ImageOverlay, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { fetchRadarFrames, RADAR_BOUNDS } from '../utils/api'
+import SynopOverlay from './SynopOverlay'
 
 const OSM_TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 const BUINRADAR_TILES = 'https://tiles.buienradar.nl/tiles-eu-v3/{z}/{x}/{y}.png'
+const GREEN_MAX_ZOOM = 11
 const REFRESH_MS = 5 * 60 * 1000
 const FRAME_MS = 400
+const IMAGE_LAYERS = ['radar', 'wolken', 'zon']
+const SYNOP_LAYERS = ['isobar', 'wind']
 
 function Recenter({ center }) {
   const map = useMap()
@@ -31,7 +35,23 @@ function Resize() {
   return null
 }
 
+function MaxZoom({ zoom }) {
+  const map = useMap()
+  useEffect(() => {
+    map.setMaxZoom(zoom)
+    if (map.getZoom() > zoom) map.setZoom(zoom)
+  }, [map, zoom])
+  return null
+}
+
 const BASE_KEY = 'buienrader_base'
+
+const PIN_ICON = L.divIcon({
+  className: 'custom-marker',
+  iconSize: [36, 36],
+  iconAnchor: [18, 36],
+  html: '<div class="marker-pin"></div>',
+})
 
 function loadBase() {
   try {
@@ -41,7 +61,7 @@ function loadBase() {
   return 'straat'
 }
 
-export default function RadarMap({ center, locationName }) {
+export default function RadarMap({ center, locationName, onMapPick, stations = [] }) {
   const [base, setBase] = useState(loadBase)
   const [layer, setLayer] = useState('radar')
   const [radarData, setRadarData] = useState(null)
@@ -49,7 +69,8 @@ export default function RadarMap({ center, locationName }) {
   const [playing, setPlaying] = useState(false)
   const [imageError, setImageError] = useState(false)
   const timerRef = useRef(null)
-  const showLayer = layer === 'radar' || layer === 'wolken' || layer === 'zon'
+  const showLayer = layer !== 'kaart'
+  const useFrames = IMAGE_LAYERS.includes(layer)
 
   const frames = radarData?.frames || []
   const current = frames[index] || null
@@ -90,7 +111,7 @@ export default function RadarMap({ center, locationName }) {
 
   useEffect(() => {
     let cancelled = false
-    if (showLayer) {
+    if (useFrames) {
       setIndex(null)
       setRadarData(null)
       setPlaying(false)
@@ -99,7 +120,7 @@ export default function RadarMap({ center, locationName }) {
       return () => { cancelled = true; clearInterval(id) }
     }
     return () => { cancelled = true }
-  }, [showLayer, loadMeta])
+  }, [useFrames, loadMeta])
 
   useEffect(() => {
     if (playing && frames.length) {
@@ -167,23 +188,55 @@ export default function RadarMap({ center, locationName }) {
     : ''
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative flex h-full w-full min-h-0 flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          <button onClick={() => setLayer('radar')} className={buttonClass(layer === 'radar')}>
+            ⚡ Radar
+          </button>
+          <button onClick={() => setLayer('wolken')} className={buttonClass(layer === 'wolken')}>
+            ☁️ Wolken
+          </button>
+          <button onClick={() => setLayer('zon')} className={buttonClass(layer === 'zon')}>
+            ☀️ Zon
+          </button>
+          <button onClick={() => setLayer('isobar')} className={buttonClass(layer === 'isobar')}>
+            〰️ Isobaren
+          </button>
+          <button onClick={() => setLayer('wind')} className={buttonClass(layer === 'wind')}>
+            💨 Wind
+          </button>
+          <button onClick={() => setLayer('kaart')} className={buttonClass(layer === 'kaart')}>
+            🧭 Geen laag
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <button onClick={() => pickBase('groen')} className={buttonClass(base === 'groen')}>
+            🗺️ Groen
+          </button>
+          <button onClick={() => pickBase('straat')} className={buttonClass(base === 'straat')}>
+            🧭 Straat
+          </button>
+        </div>
+      </div>
+      <div className="relative min-h-0 flex-1 overflow-hidden">
       <MapContainer
         center={center}
         zoom={7}
         minZoom={4}
-        maxZoom={19}
+        maxZoom={base === 'groen' ? GREEN_MAX_ZOOM : 19}
         className="h-full w-full"
         zoomControl={true}
       >
         <FitNetherlands />
         <Resize />
+        <MaxZoom zoom={base === 'groen' ? GREEN_MAX_ZOOM : 19} />
         <TileLayer
           url={base === 'groen' ? BUINRADAR_TILES : OSM_TILE}
           attribution={base === 'groen' ? '&copy; Buienradar.nl' : '&copy; OpenStreetMap contributors'}
-          maxZoom={19}
+          maxZoom={base === 'groen' ? GREEN_MAX_ZOOM : 19}
         />
-        {showLayer && current && (
+        {showLayer && useFrames && current && (
           <ImageOverlay
             url={current.url}
             bounds={RADAR_BOUNDS}
@@ -196,51 +249,28 @@ export default function RadarMap({ center, locationName }) {
             }}
           />
         )}
+        {showLayer && SYNOP_LAYERS.includes(layer) && (
+          <SynopOverlay mode={layer === 'isobar' ? 'isobar' : 'wind'} stations={stations} />
+        )}
         <Recenter center={center} />
         <Marker
           position={center}
-          icon={L.divIcon({
-            className: 'custom-marker',
-            html: '<div class="marker-pin"></div>',
-          })}
+          draggable
+          icon={PIN_ICON}
+          eventHandlers={{
+            dragend: (e) => {
+              const { lat, lng } = e.target.getLatLng()
+              onMapPick?.(lat, lng)
+            },
+          }}
         >
-          <Popup>Jouw locatie</Popup>
+          <Popup>{locationName || 'Jouw locatie'}</Popup>
         </Marker>
       </MapContainer>
 
-      <div className="pointer-events-none absolute inset-0 z-[1000] flex flex-col justify-between p-3">
-        <div className="flex flex-col items-center gap-2">
-          <div className="flex flex-wrap justify-center gap-2">
-            <button onClick={() => setLayer('radar')} className={buttonClass(layer === 'radar')}>
-              ⚡ Radar
-            </button>
-            <button onClick={() => setLayer('wolken')} className={buttonClass(layer === 'wolken')}>
-              ☁️ Wolken
-            </button>
-            <button onClick={() => setLayer('zon')} className={buttonClass(layer === 'zon')}>
-              ☀️ Zon
-            </button>
-            <button onClick={() => setLayer('kaart')} className={buttonClass(layer === 'kaart')}>
-              🧭 Geen laag
-            </button>
-          </div>
-          <div className="flex flex-wrap justify-center gap-2">
-            <button onClick={() => pickBase('groen')} className={buttonClass(base === 'groen')}>
-              🗺️ Groen
-            </button>
-            <button onClick={() => pickBase('straat')} className={buttonClass(base === 'straat')}>
-              🧭 Straat
-            </button>
-          </div>
-          {locationName && (
-            <div className="pointer-events-auto rounded-lg border border-gray-800 bg-gray-900/90 px-3 py-1 text-xs text-white shadow">
-              📍 {locationName}
-            </div>
-          )}
-        </div>
-
-        {showLayer && (
-          <div className="pointer-events-auto mx-auto w-full max-w-md rounded-lg border border-gray-800 bg-gray-900/90 px-3 py-2 text-xs text-gray-300 shadow">
+      {useFrames && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000] flex justify-center p-3">
+          <div className="pointer-events-auto w-full max-w-md rounded-lg border border-gray-800 bg-gray-900/90 px-3 py-2 text-xs text-gray-300 shadow">
             <div className="flex items-center gap-3">
               <button
                 onClick={togglePlay}
@@ -308,7 +338,8 @@ export default function RadarMap({ center, locationName }) {
               </p>
             )}
           </div>
-        )}
+        </div>
+      )}
       </div>
     </div>
   )

@@ -9,6 +9,15 @@
 .custom-marker {
   background: transparent;
   border: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.custom-marker:active,
+.custom-marker.leaflet-drag-active {
+  cursor: grabbing;
 }
 
 .marker-pin {

@@ -9,11 +9,11 @@ import HourlyForecast from './components/HourlyForecast'
 import LocationSearch from './components/LocationSearch'
 
 export default function App() {
-  const { data, rainForecast, forecast14, hourlyForecast, loading, error, center, updateLocation } = useWeatherData()
-  const [status, setStatus] = useState('')
+  const { data, rainForecast, forecast14, hourlyForecast, loading, error, center, locationName, updateLocation } = useWeatherData()
+  const [status, setStatus] = useState(locationName ? `📍 ${locationName}` : '')
 
   const handleSelect = (lat, lon, name) => {
-    updateLocation(lat, lon)
+    updateLocation(lat, lon, name)
     setStatus(name ? `📍 ${name}` : '')
   }
 
@@ -31,12 +31,30 @@ export default function App() {
     )
   }
 
+  const handleMapPick = (lat, lon) => {
+    updateLocation(lat, lon)
+    setStatus(`📍 ${lat.toFixed(3)}, ${lon.toFixed(3)}`)
+    fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}&format=json&accept-language=nl`
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        const short = d?.display_name?.split(',')[0]
+        if (short) {
+          updateLocation(lat, lon, short)
+          setStatus(`📍 ${short}`)
+        }
+      })
+      .catch(() => {})
+  }
+
   const stations = data?.weather?.actual?.stationmeasurements || []
   const station = data?.nearest?.station
   const forecast = data?.weather?.forecast?.fivedayforecast || []
   const weatherreport = data?.weather?.forecast?.weatherreport
   const wetStations = stations.filter((s) => (s.precipitation ?? 0) > 0.05).length
-  const locationName = data?.nearest?.station?.regio || station?.stationname || 'Nederland'
+  const mapLocationName =
+    locationName || data?.nearest?.station?.regio || station?.stationname || 'Nederland'
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -52,7 +70,7 @@ export default function App() {
         </span>
       </header>
 
-      <LocationSearch onSelect={handleSelect} onCurrentLocation={handleCurrentLocation} />
+      <LocationSearch name={locationName} onSelect={handleSelect} onCurrentLocation={handleCurrentLocation} />
 
       {error && (
         <div className="mb-6 rounded-xl border border-red-900 bg-red-950/60 p-4 text-sm text-red-300">
@@ -68,8 +86,8 @@ export default function App() {
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <div className="h-[520px] overflow-hidden rounded-2xl border border-gray-800">
-              <RadarMap center={center} locationName={locationName} />
+            <div className="h-[520px] overflow-hidden">
+              <RadarMap center={center} locationName={mapLocationName} onMapPick={handleMapPick} stations={stations} />
             </div>
             <p className="mt-2 text-xs text-gray-500">
               De radarbeelden worden elke 5 minuten ververst. Sleep om te pannen, scroll om te zoomen. ·{' '}

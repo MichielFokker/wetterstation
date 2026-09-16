@@ -8,9 +8,17 @@ const STORAGE_KEY = 'buienrader_location'
 function loadSavedLocation() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length === 2) return parsed
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed) && parsed.length === 2) {
+      return { lat: parsed[0], lon: parsed[1], name: '' }
+    }
+    if (parsed && typeof parsed.lat === 'number' && typeof parsed.lon === 'number') {
+      return {
+        lat: parsed.lat,
+        lon: parsed.lon,
+        name: typeof parsed.name === 'string' ? parsed.name : '',
+      }
     }
   } catch {}
   return null
@@ -23,7 +31,9 @@ export function useWeatherData() {
   const [hourlyForecast, setHourlyForecast] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [center, setCenter] = useState(() => loadSavedLocation() || DEFAULT_CENTER)
+  const [savedLoc] = useState(loadSavedLocation)
+  const [center, setCenter] = useState(() => (savedLoc ? [savedLoc.lat, savedLoc.lon] : DEFAULT_CENTER))
+  const [locationName, setLocationName] = useState(savedLoc ? savedLoc.name : '')
 
   const load = useCallback(async (lat, lon) => {
     try {
@@ -55,12 +65,24 @@ export function useWeatherData() {
     load(center[0], center[1])
   }, [])
 
-  const updateLocation = useCallback((lat, lon) => {
+  const updateLocation = useCallback((lat, lon, name = '') => {
     const newCenter = [lat, lon]
+    const newName = name || ''
     setCenter(newCenter)
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(newCenter)) } catch {}
+    setLocationName(newName)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ lat, lon, name: newName })) } catch {}
     load(lat, lon)
   }, [load])
 
-  return { data, rainForecast, forecast14, hourlyForecast, loading, error, center, updateLocation }
+  return {
+    data,
+    rainForecast,
+    forecast14,
+    hourlyForecast,
+    loading,
+    error,
+    center,
+    locationName,
+    updateLocation,
+  }
 }
