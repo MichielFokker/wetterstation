@@ -97,6 +97,16 @@ export default function App() {
                   : `${wetStations} van ${stations.length} KNMI-stations meten nu neerslag`}
               </span>
             </p>
+            {weatherreport && (
+              <div className="mt-6 rounded-2xl border border-gray-800 bg-gray-900/60 p-6">
+                <h2 className="text-sm uppercase tracking-wider text-gray-400">Weerbericht</h2>
+                <h3 className="mt-2 text-lg font-semibold text-white">{weatherreport.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-300">{weatherreport.summary}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {weatherreport.author} · {new Date(weatherreport.published).toLocaleString('nl-NL')}
+                </p>
+              </div>
+            )}
             <div className="mt-6">
               <ForecastCards forecast={forecast} />
             </div>
@@ -111,17 +121,6 @@ export default function App() {
           <div className="lg:col-span-3">
             <Forecast14Day forecast={forecast14} />
           </div>
-
-          {weatherreport && (
-            <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6 lg:col-span-3">
-              <h2 className="text-sm uppercase tracking-wider text-gray-400">Weerbericht</h2>
-              <h3 className="mt-2 text-lg font-semibold text-white">{weatherreport.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-300">{weatherreport.summary}</p>
-              <p className="mt-1 text-xs text-gray-500">
-                {weatherreport.author} · {new Date(weatherreport.published).toLocaleString('nl-NL')}
-              </p>
-            </div>
-          )}
         </div>
       )}
 

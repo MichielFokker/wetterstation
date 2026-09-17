@@ -64,6 +64,8 @@ function loadBase() {
 export default function RadarMap({ center, locationName, onMapPick, stations = [] }) {
   const [base, setBase] = useState(loadBase)
   const [layer, setLayer] = useState('radar')
+  const [fullscreen, setFullscreen] = useState(false)
+  const fullscreenRef = useRef(null)
   const [radarData, setRadarData] = useState(null)
   const [index, setIndex] = useState(null)
   const [playing, setPlaying] = useState(false)
@@ -187,8 +189,24 @@ export default function RadarMap({ center, locationName, onMapPick, stations = [
     ? new Date(current.timestamp).toLocaleString('nl-NL', { hour: '2-digit', minute: '2-digit' })
     : ''
 
+  const toggleFullscreen = () => {
+    const el = fullscreenRef.current
+    if (!el) return
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().then(() => setFullscreen(true)).catch(() => {})
+    } else {
+      document.exitFullscreen?.().then(() => setFullscreen(false)).catch(() => {})
+    }
+  }
+
+  useEffect(() => {
+    const onFs = () => setFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', onFs)
+    return () => document.removeEventListener('fullscreenchange', onFs)
+  }, [])
+
   return (
-    <div className="relative flex h-full w-full min-h-0 flex-col gap-2">
+    <div ref={fullscreenRef} className="relative flex h-full w-full min-h-0 flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1.5">
           <button onClick={() => setLayer('radar')} className={buttonClass(layer === 'radar')}>
@@ -220,6 +238,14 @@ export default function RadarMap({ center, locationName, onMapPick, stations = [
         </div>
       </div>
       <div className="relative min-h-0 flex-1 overflow-hidden">
+      <button
+        type="button"
+        onClick={toggleFullscreen}
+        title={fullscreen ? 'Volledig scherm afsluiten' : 'Volledig scherm'}
+        className="absolute right-2 top-2 z-[1100] rounded bg-gray-900/80 px-2 py-1 text-xs text-white shadow hover:bg-gray-700"
+      >
+        {fullscreen ? '⛶ Afsluiten' : '⛶ Fullscreen'}
+      </button>
       <MapContainer
         center={center}
         zoom={7}

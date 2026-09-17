@@ -24,7 +24,6 @@ function barColor(mm, past) {
 
 export default function HourlyForecast({ forecast }) {
   const [mode, setMode] = useState('back3')
-  const [open, setOpen] = useState(false)
   const [nowMs] = useState(() => Date.now())
   if (!forecast || forecast.length === 0) return null
 
@@ -47,33 +46,19 @@ export default function HourlyForecast({ forecast }) {
 
   return (
     <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-2"
-      >
-        <h2 className="text-sm uppercase tracking-wider text-gray-400">
-          Neerslag <span className="normal-case">· {past ? 'verleden' : 'vooruit'}</span>
-        </h2>
-        <span
-          className={`text-gray-500 transition-transform ${open ? '' : '-rotate-90'}`}
-          aria-hidden
-        >
-          ▼
-        </span>
-      </button>
+      <h2 className="text-sm uppercase tracking-wider text-gray-400">
+        Neerslag <span className="normal-case">· {past ? 'verleden' : 'vooruit'}</span>
+      </h2>
 
-      {open && (
-        <>
-          <div className="mt-3 flex gap-1">
-            {MODES.map((m) => (
-              <button key={m.key} onClick={() => setMode(m.key)} className={buttonClass(mode === m.key)}>
-                {m.label}
-              </button>
-            ))}
-          </div>
+      <div className="mt-3 flex gap-1">
+        {MODES.map((m) => (
+          <button key={m.key} onClick={() => setMode(m.key)} className={buttonClass(mode === m.key)}>
+            {m.label}
+          </button>
+        ))}
+      </div>
 
-          <div className="relative mt-4">
+      <div className="relative mt-4">
         <div className="flex items-end gap-0.5" style={{ height }}>
           {slice.map((p) => {
             const h = Math.max(Math.min((p.precipitation / maxRain) * height, height), 2)
@@ -116,11 +101,9 @@ export default function HourlyForecast({ forecast }) {
           </div>
 
           <p className="mt-2 text-xs text-gray-500">
-            Bron: Open-Meteo (weermodel). ← = afgelopen uren (modelanalyse), → = verwachting per uur.
-            Balk = neerslag in mm/u, getal = neerslagkans.
-          </p>
-        </>
-      )}
+          Bron: Open-Meteo (weermodel). ← = afgelopen uren (modelanalyse), → = verwachting per uur.
+          Balk = neerslag in mm/u, getal = neerslagkans.
+        </p>
     </div>
   )
 }
