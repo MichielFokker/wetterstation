@@ -288,7 +288,7 @@ export default function RadarMap({ center, locationName, onMapPick, stations = [
           <ImageOverlay
             url={current.url}
             bounds={layer === 'europa' ? EU_RADAR_BOUNDS : RADAR_BOUNDS}
-            opacity={layer === 'zon' ? 0.5 : layer === 'wolken' ? 0.8 : 0.95}
+            opacity={layer === 'zon' ? 0.8 : layer === 'wolken' ? 0.8 : 0.95}
             zIndex={400}
             className={layer === 'zon' ? 'sun-overlay' : 'radar-overlay'}
             eventHandlers={{
