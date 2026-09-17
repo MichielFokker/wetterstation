@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, ImageOverlay, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import { fetchRadarFrames, RADAR_BOUNDS } from '../utils/api'
+import { fetchRadarFrames, RADAR_BOUNDS, EU_RADAR_BOUNDS, fetchEuPressureGrid } from '../utils/api'
 import SynopOverlay from './SynopOverlay'
 
 const OSM_TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -9,7 +9,7 @@ const BUINRADAR_TILES = 'https://tiles.buienradar.nl/tiles-eu-v3/{z}/{x}/{y}.png
 const GREEN_MAX_ZOOM = 11
 const REFRESH_MS = 5 * 60 * 1000
 const FRAME_MS = 400
-const IMAGE_LAYERS = ['radar', 'wolken', 'zon']
+const IMAGE_LAYERS = ['radar', 'wolken', 'zon', 'europa']
 const SYNOP_LAYERS = ['isobar', 'wind']
 
 function Recenter({ center }) {
@@ -23,6 +23,14 @@ function FitNetherlands() {
   useEffect(() => {
     map.setView([52, 5.2], 7)
   }, [map])
+  return null
+}
+
+function FitLayer({ layer }) {
+  const map = useMap()
+  useEffect(() => {
+    if (layer === 'europa' || layer === 'isobar') map.fitBounds(EU_RADAR_BOUNDS)
+  }, [layer, map])
   return null
 }
 
@@ -70,6 +78,7 @@ export default function RadarMap({ center, locationName, onMapPick, stations = [
   const [index, setIndex] = useState(null)
   const [playing, setPlaying] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [euPressure, setEuPressure] = useState(null)
   const timerRef = useRef(null)
   const showLayer = layer !== 'kaart'
   const useFrames = IMAGE_LAYERS.includes(layer)
@@ -110,6 +119,15 @@ export default function RadarMap({ center, locationName, onMapPick, stations = [
       })
       .catch(() => {})
   }, [layer, preloadAll])
+
+  useEffect(() => {
+    if (layer !== 'isobar' || euPressure) return
+    let cancelled = false
+    fetchEuPressureGrid()
+      .then((grid) => { if (!cancelled) setEuPressure(grid) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [layer, euPressure])
 
   useEffect(() => {
     let cancelled = false
@@ -218,6 +236,9 @@ export default function RadarMap({ center, locationName, onMapPick, stations = [
           <button onClick={() => setLayer('zon')} className={buttonClass(layer === 'zon')}>
             ☀️ Zon
           </button>
+          <button onClick={() => setLayer('europa')} className={buttonClass(layer === 'europa')}>
+            🌍 Europa
+          </button>
           <button onClick={() => setLayer('isobar')} className={buttonClass(layer === 'isobar')}>
             〰️ Isobaren
           </button>
@@ -255,6 +276,7 @@ export default function RadarMap({ center, locationName, onMapPick, stations = [
         zoomControl={true}
       >
         <FitNetherlands />
+        <FitLayer layer={layer} />
         <Resize />
         <MaxZoom zoom={base === 'groen' ? GREEN_MAX_ZOOM : 19} />
         <TileLayer
@@ -265,7 +287,7 @@ export default function RadarMap({ center, locationName, onMapPick, stations = [
         {showLayer && useFrames && current && (
           <ImageOverlay
             url={current.url}
-            bounds={RADAR_BOUNDS}
+            bounds={layer === 'europa' ? EU_RADAR_BOUNDS : RADAR_BOUNDS}
             opacity={layer === 'zon' ? 0.5 : layer === 'wolken' ? 0.8 : 0.95}
             zIndex={400}
             className={layer === 'zon' ? 'sun-overlay' : 'radar-overlay'}
@@ -276,7 +298,10 @@ export default function RadarMap({ center, locationName, onMapPick, stations = [
           />
         )}
         {showLayer && SYNOP_LAYERS.includes(layer) && (
-          <SynopOverlay mode={layer === 'isobar' ? 'isobar' : 'wind'} stations={stations} />
+          <SynopOverlay
+            mode={layer === 'isobar' ? 'isobar' : 'wind'}
+            stations={layer === 'isobar' && euPressure ? euPressure : stations}
+          />
         )}
         <Recenter center={center} />
         <Marker

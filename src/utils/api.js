@@ -6,11 +6,17 @@ const RADAR_TYPES = {
   radar: 'RadarMapRain5mNL',
   wolken: 'RadarMapCloud5mNL',
   zon: 'RadarMapSun5mNL',
+  europa: 'RadarMapRain5mEU',
 }
 
 export const RADAR_BOUNDS = [
   [54.8, 0],
   [49.5, 10],
+]
+
+export const EU_RADAR_BOUNDS = [
+  [61, -13.5],
+  [34, 35],
 ]
 
 export async function fetchRadarFrames(type = 'radar') {
@@ -44,6 +50,35 @@ export async function fetchWeatherData() {
   const res = await fetch(API_BASE)
   if (!res.ok) throw new Error('Failed to fetch weather data')
   return res.json()
+}
+
+export async function fetchEuPressureGrid() {
+  const lats = []
+  const lons = []
+  const step = 2
+  for (let la = 33; la <= 71; la += step) {
+    for (let lo = -14; lo <= 36; lo += step) {
+      lats.push(la.toFixed(1))
+      lons.push(lo.toFixed(1))
+    }
+  }
+  const params = new URLSearchParams({
+    latitude: lats.join(','),
+    longitude: lons.join(','),
+    hourly: 'pressure_msl',
+    forecast_hours: '1',
+    timezone: 'UTC',
+  })
+  const res = await fetch(`${OPEN_METEO}?${params}`)
+  if (!res.ok) throw new Error('Failed to fetch European pressure grid')
+  const list = await res.json()
+  return (list || [])
+    .filter((p) => p?.hourly?.pressure_msl?.[0] != null)
+    .map((p) => ({
+      lat: p.latitude,
+      lon: p.longitude,
+      airpressure: p.hourly.pressure_msl[0],
+    }))
 }
 
 export async function fetch14DayForecast(lat, lon) {

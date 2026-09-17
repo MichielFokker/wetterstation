@@ -129,8 +129,7 @@ export default function App() {
           Weergegevens: &copy; Buienradar.nl / RTL Nederland. Data vrij gebruikt onder voorwaarde
           van bronvermelding. Kaartlaag: &copy; OpenStreetMap contributors.
         </p>
-        <p className="mt-1">
-          Dit is een persoonlijk oefenproject. Bekijk het origineel op{' '}
+        <p className="mt-1">Dit project is gemaakt door M. Fokker. Bekijk het origineel op{' '}
           <a className="text-sky-400 hover:underline" href="https://www.buienradar.nl" target="_blank" rel="noreferrer">
             buienradar.nl
           </a>

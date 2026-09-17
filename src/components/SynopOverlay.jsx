@@ -67,14 +67,19 @@ export default function SynopOverlay({ mode, stations }) {
         const max = Math.max(...allPressure)
         const step = max - min > 14 ? 4 : 2
 
-        const cols = clamp(Math.round(size.x / 14), 60, 320)
-        const rows = clamp(Math.round(size.y / 14), 60, 320)
+        const colsRaw = Math.round(size.x / 14)
+        const rowsRaw = Math.round(size.y / 14)
+        const cellsBudget = 4_000_000 / pressureStations.length
+        const capped = Math.max(40, Math.round(Math.sqrt(cellsBudget)))
+        const cols = clamp(colsRaw, 40, Math.min(320, capped))
+        const rows = clamp(rowsRaw, 40, Math.min(320, capped))
 
         const sw = b.getWest()
         const ne = b.getNorth()
         const spanLon = b.getEast() - sw
         const spanLat = ne - b.getSouth()
 
+        const R = 6
         const valueAt = (lat, lon) => {
           let best = null
           let bestD = Infinity
@@ -88,11 +93,14 @@ export default function SynopOverlay({ mode, stations }) {
               bestD = d2
               best = s
             }
-            const w = 1 / (d2 + 0.02)
-            wsum += w
-            vsum += s.airpressure * w
+            if (d2 < R * R) {
+              const w = (R * R - d2) / (R * R + d2)
+              const w2 = w * w
+              wsum += w2
+              vsum += s.airpressure * w2
+            }
           }
-          if (wsum > 0 && bestD > 0) return vsum / wsum
+          if (wsum > 0) return vsum / wsum
           return best ? best.airpressure : null
         }
 
