@@ -97,16 +97,15 @@ export default function App() {
                   : `${wetStations} van ${stations.length} KNMI-stations meten nu neerslag`}
               </span>
             </p>
+            <div className="mt-6">
+              <ForecastCards forecast={forecast} />
+            </div>
           </div>
 
           <div className="space-y-6">
             <CurrentWeather station={station} />
             <RainGraph forecast={rainForecast} />
             <HourlyForecast forecast={hourlyForecast} />
-          </div>
-
-          <div className="lg:col-span-3">
-            <ForecastCards forecast={forecast} />
           </div>
 
           <div className="lg:col-span-3">

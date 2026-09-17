@@ -91,19 +91,21 @@ export default function HourlyForecast({ forecast }) {
 
         <div className="relative mt-1 flex" style={{ height: 30 }}>
           <div className="absolute inset-x-0 top-0 border-t border-gray-700/50" />
-          {slice.map((p) => (
-            <div key={p.time} className="relative flex-1 overflow-visible">
-              <div className="absolute left-1/2 top-0 flex -translate-x-1/2 flex-col items-center">
-                <div className="h-2 border-l border-gray-500/60" />
-                <span className="mt-0.5 whitespace-nowrap text-[10px] text-gray-400">
-                  {new Date(p.time).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <span className="text-[10px] text-sky-300">
-                  {p.probability != null ? `${p.probability}%` : ''}
-                </span>
+          {slice.map((p, i) =>
+            (mode !== 'fwd24' || i % 4 === 0) ? (
+              <div key={p.time} className="relative flex-1 overflow-visible">
+                <div className="absolute left-1/2 top-0 flex -translate-x-1/2 flex-col items-center">
+                  <div className="h-2 border-l border-gray-500/60" />
+                  <span className="mt-0.5 whitespace-nowrap text-[10px] text-gray-400">
+                    {new Date(p.time).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="text-[10px] text-sky-300">
+                    {p.probability != null ? `${p.probability}%` : ''}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            ) : null
+          )}
         </div>
 
         {!past && (
